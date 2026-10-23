@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      DATABASE_URL: postgres://postgres@db:5432/app
+      UPSTREAM_URL: http://upstream:8080
+      SESSION_SECRET: change-me-before-anyone-else-uses-this
+    depends_on:
+      - db
+      - upstream
+
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: app
+
+  # The directory service the app's /api/status reports on. A stand-in: one JSON answer.
+  upstream:
+    image: node:22-alpine
+    command: ["node", "-e", "require('http').createServer((req, res) => { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ service: 'directory', version: '1.4.2', region: 'eu-west-1', build: '2026.10.21', workers: 4 })); }).listen(8080)"]
+    expose:
+      - "8080"
